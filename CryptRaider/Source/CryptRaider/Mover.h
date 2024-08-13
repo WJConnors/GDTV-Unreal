@@ -35,5 +35,6 @@ private:
 	bool ShouldMove = false;
 
 	FVector OriginalLocation;
+	AActor* Owner;
 		
 };
