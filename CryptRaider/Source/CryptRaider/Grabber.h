@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
+#include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Grabber.generated.h"
 
 
@@ -23,10 +24,22 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	UFUNCTION(BlueprintCallable)
+	void Release();
+
+	UFUNCTION(BlueprintCallable)
+	void Grab();
+
 private:
 
 	UPROPERTY(EditAnywhere)
-	float Reach = 100.0f;
+	float Reach = 200.0f;
 
-	UWorld* World;
+	UPROPERTY(EditAnywhere)
+	float GrabRadius = 50.0f;
+
+	UWorld* World = nullptr;
+	UPhysicsHandleComponent* PhysicsHandle = nullptr;
+
+	bool GetGrabbableInReach(FHitResult& OutHitResult) const;
 };

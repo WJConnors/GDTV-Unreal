@@ -19,7 +19,9 @@ void UGrabber::BeginPlay()
 	Super::BeginPlay();
 
 	World = GetWorld();
-	
+
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+	checkf(PhysicsHandle, TEXT("PhysicsHandle is missing on: %s"), *GetOwner()->GetName());
 }
 
 
@@ -28,8 +30,54 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+
+	if (!PhysicsHandle->GrabbedComponent) return;
+	FVector TargetLocation = GetComponentLocation() + (GetForwardVector() * Reach);
+	PhysicsHandle->SetTargetLocationAndRotation(TargetLocation, GetComponentRotation());
+}
+
+void UGrabber::Grab()
+{
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+
+	FHitResult HitResult;
+	bool HasHit = GetGrabbableInReach(HitResult);
+
+	if (HasHit)
+	{
+		UPrimitiveComponent* HitComponent = HitResult.GetComponent();
+		HitComponent->WakeAllRigidBodies();
+		PhysicsHandle->GrabComponentAtLocationWithRotation(
+			HitComponent,
+			NAME_None,
+			HitResult.ImpactPoint,
+			GetComponentRotation()
+		);
+	}
+}
+
+void UGrabber::Release()
+{
+	if (PhysicsHandle->GrabbedComponent)
+	{
+		PhysicsHandle->GrabbedComponent->WakeAllRigidBodies();
+		PhysicsHandle->ReleaseComponent();
+	}
+}
+
+bool UGrabber::GetGrabbableInReach(FHitResult& OutHitResult) const
+{
 	FVector Start = GetComponentLocation();
 	FVector End = Start + (GetForwardVector() * Reach);
-	DrawDebugLine(World, Start, End, FColor::Red);
+
+	return World->SweepSingleByChannel(
+		OutHitResult,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_GameTraceChannel2,
+		FCollisionShape::MakeSphere(GrabRadius)
+	);
 }
 
